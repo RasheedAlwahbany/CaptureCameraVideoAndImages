@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Switch</title>
+</head>
+<body>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="capture">Capture</button>
+    <button id="switch">Switch Camera</button>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <img id="photo" src="" alt="Captured Image" />
+    <script>
+        let currentStream;
+
+        function stopCurrentStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            }
+        }
+
+        function getCameraStream(facingMode) {
+            stopCurrentStream(); // Stop the current stream before switching
+            const constraints = {
+                video: { facingMode: facingMode }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    currentStream = stream; // Keep track of the current stream
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                })
+                .catch(error => {
+                    console.error('Error accessing the webcam', error);
+                });
+        }
+
+        document.getElementById('switch').addEventListener('click', () => {
+            const facingMode = currentStream.getVideoTracks()[0].getSettings().facingMode === 'user' ? 'environment' : 'user';
+            getCameraStream(facingMode); // Switch the camera
+        });
+
+        document.getElementById('capture').addEventListener('click', () => {
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get the image data URL and set it as the source of an <img> element to display.
+            const imageDataUrl = canvas.toDataURL('image/png');
+            document.getElementById('photo').src = imageDataUrl;
+        });
+
+        // Start with the user-facing camera by default
+        getCameraStream('user');
+    </script>
+</body>
+</html>
